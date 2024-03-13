@@ -10,6 +10,8 @@ const { CiStar } = icons;
 const Products = () => {
   const [product, setProduct] = useState(null);
   const [product1, setproduct1] = useState(null);
+  const dispatch = useDispatch();
+
   const fetchApiProduct = async () => {
     const response = await apiGetProduct({
       // page: Math.floor(Math.random(10) * 10) + 1,
@@ -20,8 +22,10 @@ const Products = () => {
 
     if (response?.success) {
       setProduct(response?.products);
+      dispatch(apiGetProductAction(response?.products));
     }
   };
+
   const fetchApiProduct1 = async () => {
     const response = await apiGetProduct({
       // page: Math.floor(Math.random(10) * 10) + 1,

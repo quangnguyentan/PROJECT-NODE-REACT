@@ -8,6 +8,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
+import { useSelector } from "react-redux";
 const { FaMapMarkerAlt, CiStar } = icons;
 
 const data = [
@@ -28,28 +29,41 @@ const SliderCate = ({ products }) => {
     from: "0",
     to: "0",
   });
-  const brand = [];
-  const brandSort = [];
-  products?.map((el) => {
-    if (el?.brand) {
-      brand.push(el?.brand);
-    }
-  });
+
   const navigate = useNavigate();
   const { category } = useParams();
   const [selected, setSelected] = useState([]);
+  const [selectedBrand, setSelectedBrand] = useState([]);
+
   const handleSelect = (e) => {
     const alreadyColor = selected.find((el) => el === e.target.value);
     if (alreadyColor)
       setSelected((prev) => prev.filter((el) => el !== e.target.value));
     else setSelected((prev) => [...prev, e.target.value]);
   };
+
   const handleSelectBrand = (e) => {
-    const alreadyBrand = selected.find((el) => el === e.target.value);
+    const alreadyBrand = selectedBrand.find((el) => el === e.target.value);
     if (alreadyBrand)
-      setSelected((prev) => prev.filter((el) => el !== e.target.value));
-    else setSelected((prev) => [...prev, e.target.value]);
+      setSelectedBrand((prev) => prev.filter((el) => el !== e.target.value));
+    else setSelectedBrand((prev) => [...prev, e.target.value]);
   };
+
+  // const { categories } = useSelector((state) => state.product)
+  // console.log(categories);
+  const data = [];
+  const { newData } = useSelector((state) => state.product);
+  newData?.map((datas) => {
+    if (datas?.type === category) data.push(datas);
+  });
+  console.log(data);
+  const brand = [];
+  const brandSort = [];
+  data?.map((el) => {
+    if (el?.brand) {
+      brand.push(el?.brand);
+    }
+  });
   const countMap = brand.reduce((acc, name) => {
     acc[name] = (acc[name] || 0) + 1;
     return acc;
@@ -69,14 +83,19 @@ const SliderCate = ({ products }) => {
         pathname: `/${category}`,
         search: createSearchParams({
           color: selected.join(","),
-          
+        }).toString(),
+      });
+    } else if (selectedBrand.length > 0) {
+      navigate({
+        pathname: `/${category}`,
+        search: createSearchParams({
+          brand: selectedBrand.join(","),
         }).toString(),
       });
     } else {
       navigate(`/${category}`);
     }
-  }, [selected]);
-  console.log(selected);
+  }, [selected, selectedBrand]);
 
   return (
     <div className="p-4 flex flex-col gap-4">
@@ -184,7 +203,9 @@ const SliderCate = ({ products }) => {
               className="w-[16px]"
               type="checkbox"
               onChange={handleSelectBrand}
-              checked={selected.some((selectedItem) => selectedItem === el)}
+              checked={selectedBrand.some(
+                (selectedItem) => selectedItem === el
+              )}
             />
             <span className="text-sm">{el}</span>
           </div>

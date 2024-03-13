@@ -5,7 +5,6 @@ const initState = {
   categories: null,
   errorMessage: "",
 };
-
 const productReducers = (state = initState, action) => {
   switch (action.type) {
     case actionType.GET_PRODUCT:
@@ -19,6 +18,7 @@ const productReducers = (state = initState, action) => {
         ...state,
         data: action?.data || {},
       };
+
     default:
       return state;
   }

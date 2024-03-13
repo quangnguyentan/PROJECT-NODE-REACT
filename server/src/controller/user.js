@@ -226,7 +226,7 @@ const resetPassword = async (req, res) => {
 export const updateCard = async (req, res) => {
   try {
     const { _id } = req.currentUser;
-    const { pid, quantity = 1, color } = req.body;
+    const { pid, quantity = 1, color, type } = req.body;
     if (!pid || !color) throw new Error("Missing inputs");
     const user = await User.findById(_id).select("cart");
     console.log(user);
@@ -239,10 +239,17 @@ export const updateCard = async (req, res) => {
       //   ...alreadyProduct,
       //   quantity: alreadyProduct.quantity + quantity,
       // };
-      const updatedQuantity = alreadyProduct.quantity + quantity;
+
       const response = await User.updateOne(
         { cart: { $elemMatch: alreadyProduct } },
-        { $set: { "cart.$.quantity": updatedQuantity } },
+        {
+          $set: {
+            "cart.$.quantity":
+              type === "increase"
+                ? alreadyProduct.quantity + quantity
+                : alreadyProduct.quantity - quantity,
+          },
+        },
         // { $set: { "cart.$.prices": prices } },
         {
           new: true,

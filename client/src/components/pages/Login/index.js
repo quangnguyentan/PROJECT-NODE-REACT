@@ -5,7 +5,7 @@ import path from "../../../utils/path";
 import { auth } from "../../../firebase.config";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { logo, banner_auth, facebook, google } from "../../atoms/images";
-
+import { toast } from "react-toastify";
 import PhoneInput from "react-phone-input-2";
 import { Button, Input } from "../../atoms/index";
 import OtpInput, { ResendOTP } from "otp-input-react";
@@ -46,96 +46,56 @@ const Login = () => {
 
   const [showOTP, setShowOTP] = useState(false);
   const [isUser, setIsUser] = useState(null);
-  // const {otp, phone }
-  // const window = {
-  //   recaptchaVerifier: undefined,
-  // };
-  // console.log(phone);
-  // const handleSubmit = async () => {
-  //   const response = await apiRegister(payload);
-  //   console.log(response);
-  // };
 
-  // const onCaptchVerify = () => {
-  //   window.recaptchaVerifier = new RecaptchaVerifier(
-  //     auth,
-  //     "recaptcha-container",
-  //     {
-  //       // size: "invisible",
-  //       callback: (response) => {
-  //         onSignup();
-  //       },
-  //       "expired-callback": () => {},
-  //     }
-  //   );
-  // };
-  // const onSignup = (e) => {
-  //   // function getPhoneNumberFromUserInput() {
-  //   //   return "+15558675309";
-  //   // }
-  //   e.preventDefault();
-  //   setLoading(true);
-  //   onCaptchVerify();
-  //   const appVerifier = window.recaptchaVerifier;
-  //   signInWithPhoneNumber(auth, phone, appVerifier)
-  //     .then((confirmationResult) => {
-  //       window.confirmationResult = confirmationResult;
-  //       setLoading(false);
-  //       setShowOTP(true);
-  //     })
-  //     .catch((error) => {
-  //       console.log(error);
-  //       setLoading(false);
-  //     });
-  // };
-  const onSignup = async () => {
-    try {
-      const response = await apiRegister(phone);
-      console.log(response);
-      if (response.err === 2) {
-        setLoading(true);
-        const recaptcha = new RecaptchaVerifier(auth, "recaptcha-container", {
+  const handleRecaptchaVerify = () => {
+    if (!window.recaptchaVerify) {
+      window.recaptchaVerify = new RecaptchaVerifier(
+        auth,
+        "recaptcha-verifier",
+        {
           size: "invisible",
           callback: (response) => {
-            console.log({ callback: response });
+            // console.log({ callback: response });
+            // onOTPVerify();
           },
-          "expired-callback": (response) => {
+          "expired-callback ": (response) => {
             console.log({ expired: response });
           },
-        });
-        await signInWithPhoneNumber(auth, phone, recaptcha)
-          .then((confirmationResult) => {
-            window.confirmationResult = confirmationResult;
-            setLoading(false);
-            setShowOTP(true);
-
-            console.log(confirmationResult);
-            // setIsUser(confirmationResult);
-          })
-          .catch((error) => {
-            console.log(error);
-            setLoading(false);
-          });
-      }
-    } catch (error) {
-      console.log(error);
+        }
+      );
     }
+  };
+  const onSignup = () => {
+    setLoading(true);
+    handleRecaptchaVerify();
+    const verifier = window.recaptchaVerify;
+    signInWithPhoneNumber(auth, phone, verifier)
+      .then((result) => {
+        // console.log(result);
+        setLoading(false);
+        toast.success("Sent OTP to your phone");
+        window.confirmOTP = result;
+        setShowOTP(true);
+      })
+      .catch((error) => {
+        setLoading(false);
+        window.isSentOTP = true;
+
+        toast.success("Some went wrong..");
+      });
   };
 
   const onOTPVerify = () => {
     setLoading(true);
-    let confirmationResult = window.confirmationResult;
-    confirmationResult
-      .confirm(otp)
-      .then((res) => {
-        console.log(res.user);
-        // const user = res.user;
-        // setIsUser(res.isUser);
+    window.confirmOTP
+      .onConfirmation(otp)
+      .then((result) => {
         setLoading(false);
       })
-      .catch((err) => {
-        console.log(err);
+      .catch((error) => {
         setLoading(false);
+
+        console.log(error);
       });
     // window.confirmationResult
     //   .confirm(otp)
@@ -149,6 +109,26 @@ const Login = () => {
     //     setLoading(false);
     //   });
   };
+  console.log(phone);
+  // const handleRecaptchaVerify = () => {
+  //   if (!window.recaptchaVerify) {
+  //     window.recaptchaVerify = new RecaptchaVerifier(
+  //       auth,
+  //       "recaptcha-verifier",
+  //       {
+  //         size: "invisible",
+  //         callback: (response) => {
+  //           console.log({ callback: response });
+  //           onOTPVerify();
+  //         },
+  //         "expired-callback ": (response) => {
+  //           console.log({ expired: response });
+  //         },
+  //       }
+  //     );
+  //   }
+  // };
+
   const handleLogin = (type) => {
     window.open(`http://localhost:5000/api/auth/${type}`, "_self");
   };
@@ -197,6 +177,13 @@ const Login = () => {
                       onClick={onOTPVerify}
                       className="flex w-full bg-red-500 border rounded-md h-[40px] items-center justify-center"
                     >
+                      Confirm OTP
+                      <button
+                        onClick={() => setOtp("")}
+                        className="flex w-full bg-red-500 border rounded-md h-[40px] items-center justify-center"
+                      >
+                        Clear
+                      </button>
                       {loading && (
                         <CgSpinner
                           size={20}
@@ -232,7 +219,7 @@ const Login = () => {
                       )}
                       <span>Tiếp tục</span>
                     </button>
-                    <div id="recaptcha-container" className="bg-red-500"></div>
+                    <div id="recaptcha-verifier"></div>
                   </div>
                 )}
                 <div

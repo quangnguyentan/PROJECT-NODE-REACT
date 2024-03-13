@@ -21,6 +21,8 @@ import {
 } from "./pages/index";
 import path from "./utils/path";
 import React from "react";
+import { Bounce, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   HighPrice,
   LowPirce,
@@ -33,7 +35,6 @@ import {
   EditProd,
   EditUser,
 } from "./components/organisms";
-import { ToastContainer } from "react-toastify";
 
 function App() {
   const { current } = useSelector((state) => state.auth);
@@ -50,10 +51,9 @@ function App() {
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="light"
+        theme="dark"
+        transition={Bounce}
       />
-      {/* Same as */}
-      <ToastContainer />
       <Routes>
         <Route path={path.PUBLIC} element={<Public />}>
           <Route path={path.HOME} element={<Home />} />

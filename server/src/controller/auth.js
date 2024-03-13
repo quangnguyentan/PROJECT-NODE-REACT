@@ -3,8 +3,7 @@ export const register = async (req, res) => {
   const { fullname, phone, password } = req.body;
   console.log(phone);
   try {
-    // if (!fullname || !phone || !password)
-    if (!phone)
+    if (!fullname || !phone || !password)
       return res.status(400).json({
         err: 1,
         msg: "Missing input",

@@ -18,6 +18,7 @@ import { apiUpdateCart } from "../../../services/userService";
 import { useDispatch, useSelector } from "react-redux";
 import { getCurrent } from "../../../stores/actions/userAction";
 import { categories } from "../../../utils/constant";
+import { apiGetProductAction } from "../../../stores/actions/prodAction";
 const { CiStar, GoPlus, FiMinus } = icons;
 const ProductCard = () => {
   const [product, setProduct] = useState(null);
@@ -31,7 +32,6 @@ const ProductCard = () => {
     const response = await apiGetProductById(id);
     if (response?.success) setProduct(response?.productDatas);
   };
-
   const fetchApiProduct = async () => {
     const response = await apiGetProduct({
       // page: Math.floor(Math.random(10) * 10) + 1,
@@ -197,8 +197,6 @@ const ProductCard = () => {
                               key={index}
                               className="w-[143px] rounded-md flex h-[52px] items-center justify-center bg-gray-200 border active:border-blue-500"
                             >
-                              {console.log(index)}
-
                               {el}
                             </span>
                           ))}

@@ -9,28 +9,23 @@ const { v4: uuidv4 } = require("uuid");
 const hashPassword = (password) =>
   bcrypt.hashSync(password, bcrypt.genSaltSync(10));
 const hashOTP = (otp) => bcrypt.hashSync(otp, bcrypt.genSaltSync(10));
-export const registerService = ({ phone }) =>
+export const registerService = ({ phone, password, fullname }) =>
   new Promise(async (resolve, reject) => {
     try {
-      const user = await User.findOne({ phone });
-      if (user) {
+      const isPhone = await User.findOne({ phone });
+      if (isPhone) {
         throw new Error("Phone number has been already ");
       }
       // cách 1
       // const num = Math.floor(Math.random() * (999999 - 100000) + 100000);
       // const otp = num.toString();
       // cách 2 là sử dụng thư viện
-      const OTP = otpGenerator.generate(6, {
-        digits: true,
-        upperCaseAlphabets: false,
-        lowerCaseAlphabets: false,
-        specialChars: false,
-      });
-      console.log(OTP);
 
+      const isPassword = hashPassword(password);
       const response = await Otp.create({
         phone,
-        otp: hashOTP(OTP),
+        fullname,
+        isPassword,
       });
       // const token =
       //   response &&

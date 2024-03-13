@@ -7,7 +7,7 @@ export const getCurrentService = (id) =>
         path: "cart",
         populate: {
           path: "product",
-          select: "title thumb prices",
+          select: "title thumb prices quantity",
         },
       });
 

@@ -9,6 +9,7 @@ import {
   apiGetProduct,
   apiGetProductById,
 } from "../../../services/productService";
+import { emtyCart } from "../../atoms/images";
 import { formatMoney, renderStartFromNumber } from "../../../utils/helper";
 import { apiRemoveCart, apiUpdateCart } from "../../../services/userService";
 import { useForm } from "react-hook-form";
@@ -19,6 +20,7 @@ const Cart = () => {
 
   const { currentData } = useSelector((state) => state.user);
   const [products, setProducts] = useState(null);
+  const [isAllChecked, setIsAllChecked] = useState(false);
   const {
     register,
     formState: { errors },
@@ -26,7 +28,9 @@ const Cart = () => {
     handleSubmit,
     watch,
   } = useForm();
-  const [user, setUser] = useState([]);
+
+  const [selectedItem, setSelectedItem] = useState([]);
+  const [value, setValue] = useState([]);
   const getApiProduct = async () => {
     const response = await apiGetProduct({
       limit: 5,
@@ -38,49 +42,150 @@ const Cart = () => {
     const response = await apiRemoveCart(id);
     if (response?.success) dispatch(getCurrent());
     localStorage.removeItem(id);
+    localStorage.removeItem(id.slice(-4));
   };
   useEffect(() => {
     getApiProduct();
   }, []);
   const getLocal = (id) => localStorage.getItem(id);
-  const handleChange = (e) => {
-    const { checked, id, name } = e.target;
-    if (name === "all-checkbox") {
-      const allUser = currentData?.cart?.map((user) => {
-        return { ...user, isChecked: checked };
-      });
-      setUser(allUser);
-    } else {
-      const findUser = currentData?.cart?.find((user) =>
-        user?._id === id ? { ...user, isChecked: checked } : user
-      );
-      setUser(findUser);
-      console.log(findUser);
 
-      localStorage.setItem(id, JSON.stringify(checked));
+  const handleChange = (e) => {
+    const value = e.target.value;
+    const isChecked = e.target.checked;
+
+    if (isChecked) {
+      setSelectedItem([...selectedItem, value]);
+      currentData?.cart?.map((el) => {
+        if (el?.product?._id === value) {
+          el.product.isChecked = isChecked;
+          localStorage.setItem(value.slice(-4), JSON.stringify(isChecked));
+        }
+      });
+
+      // const postIds = currentData?.cart?.map((item) => {
+      //   return item?.product?._id;
+      // });
+    } else {
+      currentData?.cart?.map((el) => {
+        if (el?.product?._id === value) {
+          el.product.isChecked = false;
+        }
+      });
+      setSelectedItem((prev) => {
+        return prev.filter((id) => {
+          return id !== value;
+        });
+      });
+      localStorage.removeItem(value.slice(-4));
+      localStorage.removeItem("selectedId");
     }
   };
 
+  // const postIds = currentData?.cart?.map((item) => {
+  //   const getLocal = JSON.parse(
+  //     localStorage.getItem(item?.product?._id.slice(-4))
+  //   );
+  //   if (getLocal) return item?.product?._id;
+  // });
+  // postIds.map((id) => {
+  //   console.log(id);
+  //   if (id === null || id === undefined) {
+  //     localStorage.removeItem("selectedId");
+  //   } else {
+  //     localStorage.setItem("selectedId", JSON.stringify(postIds));
+  //   }
+  // });
+
+  const checkAllHanler = (e) => {
+    const isChecked = e.target.checked;
+
+    const nameChecked = e.target.name;
+
+    if (isChecked) {
+      const postIds = currentData?.cart?.map((item) => {
+        item.product.isChecked = isChecked;
+        localStorage.setItem(
+          item?.product?._id.slice(-4),
+          JSON.stringify(isChecked)
+        );
+        return item?.product?._id;
+      });
+      setSelectedItem(postIds);
+      localStorage.setItem("selectedId", JSON.stringify(postIds));
+    } else {
+      currentData?.cart?.map((item) => {
+        item.product.isChecked = false;
+      });
+      setSelectedItem([]);
+      selectedItem.map((item) => {
+        localStorage.removeItem(item.slice(-4));
+      });
+      localStorage.removeItem("selectedId");
+    }
+  };
+  useEffect(() => {
+    if (
+      JSON.parse(localStorage.getItem("selectedId"))?.length ===
+      currentData?.cart?.length
+    ) {
+      setIsAllChecked(true);
+      localStorage.setItem("allCheckbox", JSON.stringify(true));
+    } else if (
+      JSON.parse(localStorage.getItem("selectedId"))?.length !==
+      currentData?.cart?.length
+    ) {
+      console.log("xyz");
+      setIsAllChecked(false);
+      localStorage.removeItem("allCheckbox");
+      localStorage.removeItem("selectedId");
+    }
+  }, [JSON.parse(localStorage.getItem("selectedId")), currentData]);
   const handleQuantity = async (id, type) => {
     let local = getLocal(id);
-
-    const findProduct = currentData?.cart?.find((el) => el.product?._id === id);
-
+    const findProduct = currentData?.cart?.filter(
+      (el) => el.product?._id === id
+    );
+    console.log(findProduct[0].quantity);
     if (type === "increase" && findProduct) {
       const updatedQuantity = Number(local) + 1;
       localStorage.setItem(id, JSON.stringify(updatedQuantity));
-      setTimeout(() => {
-        findProduct.quantity = updatedQuantity;
-        dispatch(getCurrent());
-      }, 100);
-    } else {
-      if (type === "reduce" && findProduct) {
-        const updatedQuantity = Number(local) - 1;
-        localStorage.setItem(id, JSON.stringify(updatedQuantity));
+      // findProduct[0].quantity = updatedQuantity;
+      const response = await apiUpdateCart({
+        pid: id,
+        type,
+        color: findProduct[0].color,
+      });
+      if (response?.success) {
         setTimeout(() => {
-          findProduct.quantity = updatedQuantity;
           dispatch(getCurrent());
         }, 100);
+
+        // currentData?.cart?.map((item) => {
+        //   if (item?.product?._id === product?._id) {
+        //     console.log(item?._id);
+        //   }
+        // });
+      }
+    } else {
+      if (type === "reduce" && findProduct) {
+        if (Number(local) <= 1) {
+          const response = await apiRemoveCart(id);
+          if (response?.success) dispatch(getCurrent());
+          localStorage.removeItem(id);
+          localStorage.removeItem(id.slice(-4));
+        } else {
+          const updatedQuantity = Number(local) - 1;
+          localStorage.setItem(id, JSON.stringify(updatedQuantity));
+          console.log(updatedQuantity);
+          const response = await apiUpdateCart({
+            pid: id,
+            type,
+            color: findProduct[0].color,
+          });
+          if (response?.success) {
+            dispatch(getCurrent());
+          }
+        }
       }
     }
   };
@@ -91,122 +196,151 @@ const Cart = () => {
         <div className="ml-4 w-[70%] flex flex-col">
           <div className="flex flex-col w-full">
             <h3 className="text-xl font-medium p-4 pb-0 ">GIỎ HÀNG</h3>
-            <div className="m-4 flex ">
-              <div className="bg-white w-full p-4 rounded-xl">
-                <div className="flex justify-between items-center ">
-                  <div className="flex gap-2 w-[324px] ">
-                    <input
-                      type="checkbox"
-                      name="all-checkbox"
-                      // checked={getLocal(user)}
-                      onChange={handleChange}
-                    />
-                    <span>Tất cả </span>
-                    <span>({currentData?.cart?.length} sản phẩm)</span>
-                  </div>
-                  <span>Đơn giá</span>
-                  <span>Số lượng</span>
-                  <span>Thành tiền</span>
-                  <span>
-                    <RiDeleteBin6Line />
-                  </span>
+            {currentData?.cart?.length === 0 ? (
+              <div className="w-full flex-col">
+                <div className="flex items-center justify-center">
+                  <img
+                    src={emtyCart}
+                    alt=""
+                    className="flex w-[160px] h-[160px] items-center justify-center"
+                  />
+                </div>
+                <div className="flex flex-col items-center justify-center">
+                  <h1 className="font-semibold text-lg">Giỏ hàng trống</h1>
+                  <p>
+                    Bạn tham khảo thêm các sản phẩm được Tiki gợi ý bên dưới
+                    nhé!
+                  </p>
                 </div>
               </div>
-            </div>
-            {currentData?.cart &&
-              currentData?.cart?.map((el) => (
-                <div className="mx-4   flex " key={el._id}>
+            ) : (
+              <>
+                <div className="m-4 flex ">
                   <div className="bg-white w-full p-4 rounded-xl">
                     <div className="flex justify-between items-center ">
-                      <div className=" w-[324px] gap-2 flex ">
+                      <div className="flex gap-2 w-[324px] ">
                         <input
                           type="checkbox"
-                          id={el?._id}
-                          // checked={Boolean(getLocal(el?._id))}
-                          onChange={handleChange}
+                          name="all-checkbox"
+                          onChange={checkAllHanler}
+                          checked={Boolean(
+                            JSON.parse(localStorage.getItem("allCheckbox"))
+                          )}
                         />
-
-                        <div className="w-[80px] h-[80px]">
-                          <Link>
-                            <img
-                              src={
-                                el?.product?.thumb?.[0]
-                                  ?.split(",")[0]
-                                  .split(" ")[0]
-                              }
-                              alt=""
-                            />
-                          </Link>
-                        </div>
-                        <div className="flex flex-col gap-1 w-[202px]">
-                          <span className="overflow-ellipsis overflow-hidden text-sm font-normal">
-                            {el?.product?.title}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {el?.color === "Không có" ? "" : el?.color}
-                          </span>
-                          <div className="flex gap-2 text-xs  font-normal">
-                            <span className="w-[32px] h-[16px]">
-                              {/* <CiDeliveryTruck className="w-full" /> */}
-                              <img
-                                src="https://salt.tikicdn.com/cache/w96/ts/tka/65/be/89/d0c3208134f19e4bab8b50d81b41933a.png"
-                                alt=""
-                              />
-                            </span>
-
-                            <span>
-                              Giao thứ {day.getDay() + 3}, {day.getDate() + 2}/{" "}
-                              {day.getMonth() + 1}
-                            </span>
-                          </div>
-                        </div>
+                        <span>Tất cả </span>
+                        <span>({currentData?.cart?.length} sản phẩm)</span>
                       </div>
-                      <div className="flex">
-                        {formatMoney(el?.product?.prices)}
-                        <sub>₫</sub>
-                      </div>
-                      <div>
-                        <div className="flex">
-                          <div className="w-[23px] h-[24px] rounded-l-sm border pl-[2px] ">
-                            <button
-                              className=""
-                              onClick={() =>
-                                handleQuantity(el?.product?._id, "reduce")
-                              }
-                            >
-                              <FiMinus />
-                            </button>
-                          </div>
-                          <div className="w-[32px] h-[24px]  border">
-                            <span id="product" className=" p-3">
-                              {getLocal(el?.product?._id)}
-                            </span>
-                          </div>
-                          <div className="w-[23px] h-[24px] rounded-r-sm border pl-[2px] ">
-                            <button
-                              className=""
-                              onClick={() =>
-                                handleQuantity(el?.product?._id, "increase")
-                              }
-                            >
-                              <GoPlus />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex">
-                        {formatMoney(el?.product?.prices * el?.quantity)}
-                        <sub>₫</sub>
-                      </div>
-                      <span
-                        onClick={() => handleRemoveProduct(el?.product?._id)}
-                      >
+                      <span>Đơn giá</span>
+                      <span>Số lượng</span>
+                      <span>Thành tiền</span>
+                      <span>
                         <RiDeleteBin6Line />
                       </span>
                     </div>
                   </div>
                 </div>
-              ))}
+                {currentData?.cart &&
+                  currentData?.cart?.map((el) => (
+                    <div className="mx-4   flex " key={el._id}>
+                      <div className="bg-white w-full p-4 rounded-xl">
+                        <div className="flex justify-between items-center ">
+                          <div className=" w-[324px] gap-2 flex ">
+                            <input
+                              type="checkbox"
+                              value={el?.product?._id}
+                              checked={Boolean(
+                                localStorage.getItem(el?.product?._id.slice(-4))
+                              )}
+                              onChange={handleChange}
+                            />
+
+                            <div className="w-[80px] h-[80px]">
+                              <Link>
+                                <img
+                                  src={
+                                    el?.product?.thumb?.[0]
+                                      ?.split(",")[0]
+                                      .split(" ")[0]
+                                  }
+                                  alt=""
+                                />
+                              </Link>
+                            </div>
+                            <div className="flex flex-col gap-1 w-[202px]">
+                              <span className="overflow-ellipsis overflow-hidden text-sm font-normal">
+                                {el?.product?.title}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {el?.color === "Không có" ? "" : el?.color}
+                              </span>
+                              <div className="flex gap-2 text-xs  font-normal">
+                                <span className="w-[32px] h-[16px]">
+                                  {/* <CiDeliveryTruck className="w-full" /> */}
+                                  <img
+                                    src="https://salt.tikicdn.com/cache/w96/ts/tka/65/be/89/d0c3208134f19e4bab8b50d81b41933a.png"
+                                    alt=""
+                                  />
+                                </span>
+
+                                <span>
+                                  Giao thứ {day.getDay() + 3},{" "}
+                                  {day.getDate() + 2}/ {day.getMonth() + 1}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex">
+                            {formatMoney(el?.product?.prices)}
+                            <sub>₫</sub>
+                          </div>
+                          <div>
+                            <div className="flex">
+                              <div className="w-[23px] h-[24px] rounded-l-sm border pl-[2px] ">
+                                <button
+                                  className=""
+                                  onClick={() =>
+                                    handleQuantity(el?.product?._id, "reduce")
+                                  }
+                                >
+                                  <FiMinus />
+                                </button>
+                              </div>
+                              <div className="w-[32px] h-[24px]  border">
+                                <span id="product" className=" p-3">
+                                  {getLocal(el?.product?._id)}
+                                </span>
+                              </div>
+                              <div className="w-[23px] h-[24px] rounded-r-sm border pl-[2px] ">
+                                <button
+                                  className=""
+                                  onClick={() =>
+                                    handleQuantity(el?.product?._id, "increase")
+                                  }
+                                >
+                                  <GoPlus />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex">
+                            {formatMoney(
+                              el?.product?.prices * getLocal(el?.product?._id)
+                            )}
+                            <sub>₫</sub>
+                          </div>
+                          <span
+                            onClick={() =>
+                              handleRemoveProduct(el?.product?._id)
+                            }
+                          >
+                            <RiDeleteBin6Line />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </>
+            )}
           </div>
           <div className="w-[96%] m-4 bg-white rounded-lg">
             <div className="m-4 flex ">

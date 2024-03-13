@@ -14,6 +14,8 @@ import {
 } from "../../atoms/images";
 import { Button } from "../../atoms";
 import ClipLoader from "react-spinners/ClipLoader";
+import { apiGetProductAction } from "../../../stores/actions/prodAction";
+import { useDispatch, useSelector } from "react-redux";
 const { GiShop } = icons;
 const Payment = () => {
   const [loading, setLoading] = useState(false);
@@ -177,12 +179,12 @@ const Payment = () => {
                   </div>
                 </div>
 
-                <div className="w-full mt-2 flex gap-2 items-center h-[64px]">
-                  <PayPal />
-                </div>
                 {/* <div className=" w-full h-[60px] ">
                   <Button name="Đặt hàng" fw />
                 </div> */}
+              </div>
+              <div className="bg-white rounded-md w-full p-4">
+                <PayPal amount={120} />
               </div>
             </div>
           </div>

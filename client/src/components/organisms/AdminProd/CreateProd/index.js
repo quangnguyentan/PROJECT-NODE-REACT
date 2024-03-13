@@ -8,11 +8,14 @@ import {
 } from "../../../../services/productService";
 import { categories } from "../../../../utils/constant";
 import { compareArrays, createSlug } from "../../../../utils/helper";
+import { toast } from "react-toastify";
 
 const CreateProduct = () => {
   const [products, setProducts] = useState(null);
   const [category, setCategory] = useState(null);
   const cat = [];
+  const brandSort = [];
+
   const {
     register,
     formState: { errors },
@@ -28,7 +31,6 @@ const CreateProduct = () => {
   });
   const getBrand = async (query) => {
     const brand = [];
-    console.log(query.type);
     const response = await apiGetProduct({ type: query.type });
     if (response.success) {
       response?.products?.map((product) => {
@@ -40,6 +42,19 @@ const CreateProduct = () => {
       setProducts(brand);
     }
   };
+  const brandPro = [];
+  products?.map((product) => {
+    brandPro.push(product.brand);
+  });
+
+  const countMap = brandPro.reduce((acc, name) => {
+    acc[name] = (acc[name] || 0) + 1;
+    return acc;
+  }, {});
+
+  for (const key in countMap) {
+    brandSort.push(key);
+  }
   const getAll = async () => {
     const cate = [];
     const response = await apiGetProduct();
@@ -86,7 +101,13 @@ const CreateProduct = () => {
     // console.log(data);
     const finalPayload = { ...data };
 
-    await apiCreateProduct(finalPayload);
+    const response = await apiCreateProduct(finalPayload);
+    if (response.success) {
+      toast.success(response.mes, { theme: "colored" });
+      reset();
+    } else {
+      toast.info(response.mes, { theme: "colored", hideProgressBar: true });
+    }
   };
   useEffect(() => {
     getAll();
@@ -158,7 +179,7 @@ const CreateProduct = () => {
                 label="Category"
                 options={result?.map((el, index) => ({
                   code: el?.slug,
-                  value: el?.name,
+                  value: el?.slug,
                 }))}
                 register={register}
                 id="cateName"
@@ -170,9 +191,9 @@ const CreateProduct = () => {
             <div className="flex-1 w-full">
               <Select
                 label="Brand"
-                options={products?.map((el) => ({
-                  code: el?.brand,
-                  value: el?.brand,
+                options={brandSort?.map((el) => ({
+                  code: el,
+                  value: el,
                 }))}
                 register={register}
                 id="brand"

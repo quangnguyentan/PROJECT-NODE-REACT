@@ -21,6 +21,7 @@ import {
   formatMoney,
   renderStartFromNumber,
 } from "../../../utils/helper";
+import { useSelector } from "react-redux";
 const { IoChevronBackOutline, IoIosArrowForward, CiStar } = icons;
 const DetailProduct = () => {
   const { category } = useParams();
@@ -37,13 +38,16 @@ const DetailProduct = () => {
     const data = [];
     const response = await apiGetProduct(queries);
     if (response.success) {
+      
       response?.products?.map((product) => {
         if (product?.type === category) data.push(product);
       });
       setProducts(data);
     }
   };
-
+  const { categories } = useSelector((state) => state.product) 
+  console.log(categories);
+  
   useEffect(() => {
     let param = [];
     for (let i of params.entries()) param.push(i);

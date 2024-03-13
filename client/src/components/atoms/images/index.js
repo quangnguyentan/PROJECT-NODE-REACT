@@ -39,3 +39,4 @@ export { default as dientu } from "../../../assets/images/dientu.category.png";
 export { default as thethao } from "../../../assets/images/thethao.category.png";
 export { default as mayanh } from "../../../assets/images/mayanh.category.png";
 export { default as sanphamtaichinh } from "../../../assets/images/sanphamtaichinh.category.jpg";
+export { default as emtyCart } from "../../../assets/images/emty-cart.png";

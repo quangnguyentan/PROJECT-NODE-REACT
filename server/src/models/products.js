@@ -19,6 +19,10 @@ var productSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
+    quantity: {
+      default: 100,
+      type: Number,
+    },
     sold: {
       type: String,
     },

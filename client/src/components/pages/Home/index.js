@@ -8,7 +8,7 @@ import { useSelector } from "react-redux";
 
 const Home = () => {
   const location = useLocation();
-
+  
   return (
     <div className="w-main flex mt-3 ">
       <div className="flex-2 flex rounded-md bg-opacity-90 bg-white mx-6  ">

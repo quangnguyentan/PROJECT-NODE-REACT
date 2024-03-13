@@ -15,6 +15,10 @@ import { FaEdit } from "react-icons/fa";
 import { EditProd } from "../..";
 import ProductUpdate from "../../ProductUpdate";
 import { toast } from "react-toastify";
+import {
+  apiGetProdByIdAction,
+  apiGetProductAction,
+} from "../../../../stores/actions/prodAction";
 
 const { RiDeleteBin6Line } = icons;
 
@@ -34,9 +38,7 @@ const EditProduct = () => {
   });
   const handleRemoveProduct = async (id) => {
     const response = await apiDeleteProduct(id);
-
     if (response.success) {
-      window.location.reload();
       toast.success(response.mes, { theme: "colored" });
     } else {
       toast.info(response.mes, { theme: "colored", hideProgressBar: true });
@@ -45,8 +47,8 @@ const EditProduct = () => {
 
   useEffect(() => {
     getApiProduct();
-  }, [editProduct]);
-  console.log(products);
+  }, [editProduct, handleRemoveProduct]);
+
   return (
     <div className="w-full flex flex-col h-[541px]  overflow-y-auto scrollbar-hide relative ">
       {editProduct && (
