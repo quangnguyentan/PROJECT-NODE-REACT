@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "../../atoms";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import path from "../../../utils/path";
 import icons from "../../../utils/icons";
 import { useDispatch, useSelector } from "react-redux";
@@ -13,24 +13,19 @@ import { emtyCart } from "../../atoms/images";
 import { formatMoney, renderStartFromNumber } from "../../../utils/helper";
 import { apiRemoveCart, apiUpdateCart } from "../../../services/userService";
 import { useForm } from "react-hook-form";
+import { encrypt, decrypt, compare } from "n-krypta";
+import { Base64 } from "js-base64";
 const { CiStar, RiDeleteBin6Line, CiDeliveryTruck, GoPlus, FiMinus } = icons;
 const Cart = () => {
   const dispatch = useDispatch();
   const day = new Date();
+  const secret = "my-secret";
 
   const { currentData } = useSelector((state) => state.user);
   const [products, setProducts] = useState(null);
   const [isAllChecked, setIsAllChecked] = useState(false);
-  const {
-    register,
-    formState: { errors },
-    reset,
-    handleSubmit,
-    watch,
-  } = useForm();
 
   const [selectedItem, setSelectedItem] = useState([]);
-  const [value, setValue] = useState([]);
   const getApiProduct = async () => {
     const response = await apiGetProduct({
       limit: 5,
@@ -38,11 +33,30 @@ const Cart = () => {
     });
     if (response?.success) setProducts(response?.products);
   };
+  const navigate = useNavigate();
+
   const handleRemoveProduct = async (id) => {
     const response = await apiRemoveCart(id);
-    if (response?.success) dispatch(getCurrent());
-    localStorage.removeItem(id);
-    localStorage.removeItem(id.slice(-4));
+    if (response?.success) {
+      dispatch(getCurrent());
+
+      const value = JSON.parse(localStorage.getItem("selectedId"));
+
+      if (value) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const getIds = value?.filter((item) => id !== item);
+          localStorage.setItem("selectedId", JSON.stringify(getIds));
+          console.log(getIds.length === 0);
+          if (getIds.length === 0) {
+            localStorage.removeItem("selectedId");
+            localStorage.removeItem("allCheckbox");
+          }
+        }
+      }
+
+      localStorage.removeItem(id.slice(-4));
+      localStorage.removeItem(id);
+    }
   };
   useEffect(() => {
     getApiProduct();
@@ -57,18 +71,13 @@ const Cart = () => {
       setSelectedItem([...selectedItem, value]);
       currentData?.cart?.map((el) => {
         if (el?.product?._id === value) {
-          el.product.isChecked = isChecked;
+          el.isChecked = true;
           localStorage.setItem(value.slice(-4), JSON.stringify(isChecked));
         }
       });
-
-      // const postIds = currentData?.cart?.map((item) => {
-      //   return item?.product?._id;
-      // });
     } else {
       currentData?.cart?.map((el) => {
         if (el?.product?._id === value) {
-          el.product.isChecked = false;
         }
       });
       setSelectedItem((prev) => {
@@ -81,48 +90,122 @@ const Cart = () => {
     }
   };
 
-  // const postIds = currentData?.cart?.map((item) => {
-  //   const getLocal = JSON.parse(
-  //     localStorage.getItem(item?.product?._id.slice(-4))
-  //   );
-  //   if (getLocal) return item?.product?._id;
-  // });
-  // postIds.map((id) => {
-  //   console.log(id);
-  //   if (id === null || id === undefined) {
-  //     localStorage.removeItem("selectedId");
-  //   } else {
-  //     localStorage.setItem("selectedId", JSON.stringify(postIds));
-  //   }
-  // });
-
   const checkAllHanler = (e) => {
     const isChecked = e.target.checked;
-
-    const nameChecked = e.target.name;
-
+    console.log(isChecked);
     if (isChecked) {
       const postIds = currentData?.cart?.map((item) => {
-        item.product.isChecked = isChecked;
+        item.isChecked = true;
         localStorage.setItem(
           item?.product?._id.slice(-4),
           JSON.stringify(isChecked)
         );
+        // item.isChecked = isChecked;
+        // for (let i = 0; i < localStorage.length; i++) {
+        //   const key = localStorage.key(i);
+        //   const value = JSON.parse(localStorage.getItem(key));
+        //   currentData?.cart?.map((el) => {
+        //     if (el?.product?._id.slice(-4) === key.slice(-4))
+        //       el.isChecked = value;
+        //   });
+        // }
+
         return item?.product?._id;
       });
       setSelectedItem(postIds);
       localStorage.setItem("selectedId", JSON.stringify(postIds));
     } else {
+      // currentData?.cart?.map((item) => {
+      //   item.isChecked = false;
+      // });
+      // console.log(currentData?.cart);
       currentData?.cart?.map((item) => {
-        item.product.isChecked = false;
-      });
-      setSelectedItem([]);
-      selectedItem.map((item) => {
-        localStorage.removeItem(item.slice(-4));
+        localStorage.removeItem(item?.product?._id.slice(-4));
       });
       localStorage.removeItem("selectedId");
+      setSelectedItem([]);
     }
   };
+
+  const handleSetLocal = () => {
+    const selected = [];
+    currentData?.cart?.map((el) => {
+      if (currentData?.cart?.length > 0 && el?.isChecked) {
+        selected.push(el);
+      }
+      localStorage.setItem("cart", JSON.stringify(selected));
+      // const encodedData = Base64.encode(
+      //   localStorage.setItem("cart", JSON.stringify(selected))
+      // );
+
+      // console.log(encodedData);
+    });
+  };
+  const isValue = currentData?.cart?.map((item) => {
+    return item;
+  });
+
+  function getKeysFromLocalStorage() {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        currentData?.cart?.map((item) => {
+          if (item?.product?._id?.slice(-4) === key) {
+            keys.push(key);
+          }
+        });
+      }
+    }
+
+    return keys.slice(-4);
+  }
+  const getKeys = getKeysFromLocalStorage();
+  // getKeys.map((el) => {
+  //   currentData?.cart?.filter((item) => {
+  //     if (el === item?.product?._id?.slice(-4)) {
+  //       item.isChecked = true;
+  //     }
+  //   });
+  // });
+  // const findIsCheckedFromCurrent = currentData?.cart?.filter((item) => {
+  //   return item.isChecked;
+  // });
+
+  // useEffect(() => {
+
+  // }, [findIsCheckedFromCurrent]);
+
+  if (getKeys.length === currentData?.cart?.length) {
+    isValue?.map((item) => {
+      item.isChecked = true;
+    });
+  } else {
+    currentData?.cart?.map((item) => {
+      if (getKeysFromLocalStorage().includes(item?.product?._id.slice(-4))) {
+        item.isChecked = true;
+      } else {
+        item.isChecked = false;
+      }
+    });
+  }
+  const findIsChecked = currentData?.cart?.filter(
+    (item) => item.isChecked === true
+  );
+  const postIds = findIsChecked?.map((item) => {
+    return item?.product?._id;
+  });
+  if (
+    isValue?.length > 0 &&
+    findIsChecked?.length === currentData?.cart?.length
+  ) {
+    localStorage.setItem("allCheckbox", JSON.stringify(true));
+    localStorage.setItem("selectedId", JSON.stringify(postIds));
+  } else {
+    localStorage.removeItem("allCheckbox");
+    localStorage.removeItem("selectedId");
+  }
+
   useEffect(() => {
     if (
       JSON.parse(localStorage.getItem("selectedId"))?.length ===
@@ -134,18 +217,17 @@ const Cart = () => {
       JSON.parse(localStorage.getItem("selectedId"))?.length !==
       currentData?.cart?.length
     ) {
-      console.log("xyz");
       setIsAllChecked(false);
       localStorage.removeItem("allCheckbox");
       localStorage.removeItem("selectedId");
     }
   }, [JSON.parse(localStorage.getItem("selectedId")), currentData]);
+
   const handleQuantity = async (id, type) => {
     let local = getLocal(id);
     const findProduct = currentData?.cart?.filter(
       (el) => el.product?._id === id
     );
-    console.log(findProduct[0].quantity);
     if (type === "increase" && findProduct) {
       const updatedQuantity = Number(local) + 1;
       localStorage.setItem(id, JSON.stringify(updatedQuantity));
@@ -159,20 +241,29 @@ const Cart = () => {
         setTimeout(() => {
           dispatch(getCurrent());
         }, 100);
-
-        // currentData?.cart?.map((item) => {
-        //   if (item?.product?._id === product?._id) {
-        //     console.log(item?._id);
-        //   }
-        // });
       }
     } else {
       if (type === "reduce" && findProduct) {
         if (Number(local) <= 1) {
           const response = await apiRemoveCart(id);
-          if (response?.success) dispatch(getCurrent());
-          localStorage.removeItem(id);
-          localStorage.removeItem(id.slice(-4));
+          if (response?.success) {
+            dispatch(getCurrent());
+            localStorage.removeItem(id.slice(-4));
+            localStorage.removeItem(id);
+
+            const value = JSON.parse(localStorage.getItem("selectedId"));
+            if (value) {
+              for (let i = 0; i < localStorage.length; i++) {
+                const getIds = value?.filter((item) => id !== item);
+                console.log(getIds);
+                localStorage.setItem("selectedId", JSON.stringify(getIds));
+                if (getIds.length === 0) {
+                  localStorage.removeItem("selectedId");
+                  localStorage.removeItem("allCheckbox");
+                }
+              }
+            }
+          }
         } else {
           const updatedQuantity = Number(local) - 1;
           localStorage.setItem(id, JSON.stringify(updatedQuantity));
@@ -189,7 +280,6 @@ const Cart = () => {
       }
     }
   };
-
   return (
     <div className="w-main flex flex-col  ">
       <div className="w-full flex">
@@ -439,11 +529,17 @@ const Cart = () => {
               </div>
             </div>
           </div>
-          <Link to={`/${path.CHECKOUT}${path.PAYMENT}`}>
-            <div className="flex flex-col gap-2">
-              <Button name="Mua ngay (1)" fw />
-            </div>
-          </Link>
+
+          <div className="flex flex-col gap-2">
+            <Button
+              handleOnclick={() => {
+                navigate("/checkout/payment");
+                handleSetLocal();
+              }}
+              name={`Mua ngay (${getKeysFromLocalStorage().length}) `}
+              fw
+            />
+          </div>
         </div>
       </div>
     </div>

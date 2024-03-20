@@ -41,7 +41,10 @@ const UserSchema = new mongoose.Schema(
         },
         quantity: Number,
         color: String,
-
+        isChecked: {
+          type: Boolean,
+          default: false,
+        },
         // prices: Number,
       },
     ],

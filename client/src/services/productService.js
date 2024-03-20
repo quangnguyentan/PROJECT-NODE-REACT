@@ -50,3 +50,16 @@ export const apiDeleteProduct = (id) =>
       console.log("Failed to get product", error);
     }
   });
+export const apiCreateOrder = (data) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const response = await axiosConfig({
+        method: "POST",
+        url: "/order/",
+        data,
+      });
+      resolve(response);
+    } catch (error) {
+      console.log("Failed to get product", error);
+    }
+  });

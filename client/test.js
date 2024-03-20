@@ -412,12 +412,16 @@ const array = [
   "Kindle",
 ];
 
-const countMap = array.reduce((acc, name) => {
-  acc[name] = (acc[name] || 0) + 1;
-  console.log(acc);
-  return acc;
-}, {});
-console.log(countMap);
-for (const key in countMap) {
-  console.log(key);
-}
+// const countMap = array.reduce((acc, name) => {
+//   acc[name] = (acc[name] || 0) + 1;
+//   console.log(acc);
+//   return acc;
+// }, {});
+// console.log(countMap);
+// for (const key in countMap) {
+//   console.log(key);
+// }
+// const x( ) => {
+// b = 3
+// }
+// console.log(3);

@@ -226,7 +226,7 @@ const resetPassword = async (req, res) => {
 export const updateCard = async (req, res) => {
   try {
     const { _id } = req.currentUser;
-    const { pid, quantity = 1, color, type } = req.body;
+    const { pid, quantity = 1, color, type, isChecked } = req.body;
     if (!pid || !color) throw new Error("Missing inputs");
     const user = await User.findById(_id).select("cart");
     console.log(user);
@@ -248,6 +248,7 @@ export const updateCard = async (req, res) => {
               type === "increase"
                 ? alreadyProduct.quantity + quantity
                 : alreadyProduct.quantity - quantity,
+            "cart.$.isChekced": isChecked,
           },
         },
         // { $set: { "cart.$.prices": prices } },

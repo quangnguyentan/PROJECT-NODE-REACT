@@ -14,12 +14,42 @@ import {
 } from "../../atoms/images";
 import { Button } from "../../atoms";
 import ClipLoader from "react-spinners/ClipLoader";
+import { Base64 } from "js-base64";
+
 import { apiGetProductAction } from "../../../stores/actions/prodAction";
 import { useDispatch, useSelector } from "react-redux";
+
+import { formatMoney } from "../../../utils/helper";
+import { apiCreateOrder } from "../../../services/productService";
+import { getCurrent } from "../../../stores/actions/userAction";
 const { GiShop } = icons;
 const Payment = () => {
   const [loading, setLoading] = useState(false);
+  const [cash, setCash] = useState("");
+  const dispatch = useDispatch();
 
+  const { currentData } = useSelector((state) => state.user);
+  // const getCartLocal = Base64.decode(JSON.parse(localStorage.getItem("cart")));
+  const getCartLocal = JSON.parse(localStorage.getItem("cart"));
+  const handleSaveOrder = async () => {
+    const response = await apiCreateOrder({
+      status: "Successed",
+      products: getCartLocal,
+      total: formatMoney(
+        getCartLocal?.reduce(
+          (sum, el) => sum + el?.quantity * Number(el?.product?.prices),
+          0
+        )
+      ),
+      address: currentData?.address,
+      // total: 30,
+      orderBy: currentData?._id,
+    });
+    console.log(response);
+    if (response.success) {
+      dispatch(getCurrent());
+    }
+  };
   useEffect(() => {
     window.scrollTo(0, 0);
     setLoading(true);
@@ -27,6 +57,7 @@ const Payment = () => {
       setLoading(false);
     }, 500);
   }, []);
+  console.log(cash);
   return (
     <>
       {loading ? (
@@ -57,7 +88,7 @@ const Payment = () => {
             <div className="w-[70%] mx-4 mt-8 mb-4 flex flex-col gap-4">
               <div className="bg-white rounded-md p-4 flex flex-col gap-8">
                 <h3 className="font-bold text-lg">Thông tin đơn hàng</h3>
-                <div className="w-full h-[154px] border rounded-lg px-4 relative py-8">
+                <div className="w-full h-fit border rounded-lg px-4 relative py-8">
                   <span className="absolute top-0 flex items-center gap-1 font-normal px-2 left-3 translate-y-[-50%] bg-white text-sm text-green-600">
                     <GiShop />
                     Gói: Giao thứ 4, trước 19h, 17/01
@@ -74,23 +105,41 @@ const Payment = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2 ">
-                      <img
-                        className="w-[48px] h-[48px]"
-                        src="https://salt.tikicdn.com/cache/96x96/ts/product/72/52/d2/f1e9e6e657aa4e777491d6ee7e7d79bf.PNG.webp"
-                        alt=""
-                      />
-                      <div className="flex flex-col gap-1 text-sm text-gray-500">
-                        <span className="overflow-hidden overflow-ellipsis line-clamp-1 ">
-                          Ba lô nam thời trang cao cấp phong cách mới 15,6" -
-                          Màu đen abcadsd xasxas
-                        </span>
-                        <div className="flex justify-between">
-                          <span>SL: x1</span>
-                          <span>441.000 ₫</span>
-                        </div>
+                    {getCartLocal?.map((el) => (
+                      <div key={el?._id}>
+                        {el?.isChecked === true ? (
+                          <div className="flex gap-2 ">
+                            <img
+                              className="w-[48px] h-[48px]"
+                              src={
+                                el?.product?.thumb?.[0]
+                                  ?.split(",")[0]
+                                  .split(" ")[0]
+                              }
+                              alt=""
+                            />
+                            <div className="flex flex-col gap-1 text-sm text-gray-500">
+                              <span className="overflow-hidden overflow-ellipsis line-clamp-1 ">
+                                {el?.product?.title}
+                              </span>
+                              <div className="flex justify-between">
+                                <div className="flex gap-1 ">
+                                  <span>SL: x{el?.quantity}</span>
+                                  <span className="flex justify-center">
+                                    <span>
+                                      {formatMoney(el?.product?.prices)}
+                                    </span>
+                                    <sub>đ</sub>
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          ""
+                        )}
                       </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -98,7 +147,12 @@ const Payment = () => {
                 <h3>Chọn hình thức thanh toán</h3>
                 <div className="flex flex-col gap-4">
                   <div className="w-full flex gap-2 items-center h-[64px] ">
-                    <input type="radio" className="w-[18px] h-[18px]" />
+                    <input
+                      type="radio"
+                      value="cash"
+                      className="w-[18px] h-[18px]"
+                      onChange={(e) => setCash(e.target.value)}
+                    />
                     <img
                       src={payment_hand}
                       className="w-[32px] h-[32px]"
@@ -155,7 +209,18 @@ const Payment = () => {
                 <div className=" w-full h-[108px] flex flex-col text-sm text-gray-500 gap-1 my-2 border-b-[1px]">
                   <div className="flex justify-between">
                     <span>Tạm tính</span>
-                    <span>441.000đ</span>
+                    <span className="flex justify-center">
+                      <span>
+                        {formatMoney(
+                          getCartLocal?.reduce(
+                            (sum, el) =>
+                              sum + el?.quantity * Number(el?.product?.prices),
+                            0
+                          )
+                        )}
+                      </span>
+                      <sub>₫</sub>
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span> Phí vận chuyển</span>
@@ -173,19 +238,28 @@ const Payment = () => {
                 <div className=" w-full h-[66px] flex flex-col gap-1 my-2 ">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Tổng tiền</span>
-                    <span className="text-xl font-medium text-red-500">
-                      416.000 ₫
+                    <span className="flex justify-center text-xl font-medium text-red-500">
+                      <span>
+                        {formatMoney(
+                          getCartLocal?.reduce(
+                            (sum, el) =>
+                              sum + el?.quantity * Number(el?.product?.prices),
+                            0
+                          )
+                        )}
+                      </span>
+                      <sub>₫</sub>
                     </span>
                   </div>
                 </div>
 
-                {/* <div className=" w-full h-[60px] ">
-                  <Button name="Đặt hàng" fw />
-                </div> */}
+                <div className=" w-full h-[60px] ">
+                  <Button name="Đặt hàng" fw handleOnclick={handleSaveOrder} />
+                </div>
               </div>
-              <div className="bg-white rounded-md w-full p-4">
+              {/* <div className="bg-white rounded-md w-full p-4">
                 <PayPal amount={120} />
-              </div>
+              </div> */}
             </div>
           </div>
           <div className="bg-gray-200 text-xs mt-12 p-4 flex flex-col items-start justify-start w-full gap-4 text-gray-500">
