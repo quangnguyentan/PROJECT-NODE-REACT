@@ -1,9 +1,14 @@
 import React, { useEffect } from "react";
 
 import { useSelector } from "react-redux";
+import {
+  apiGetOrders,
+  apiGetUserOrders,
+} from "../../../../services/productService";
 
 const Account = () => {
   const { currentData } = useSelector((state) => state.user);
+
   return (
     <div className="p-4 flex flex-col gap-2">
       <h3 className="font-normal text-xl text-black"> Thông tin tài khoản</h3>

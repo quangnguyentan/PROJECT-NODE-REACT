@@ -425,3 +425,7 @@ const array = [
 // b = 3
 // }
 // console.log(3);
+
+const x = [1, 2, 3];
+x.length = 0;
+console.log(x);

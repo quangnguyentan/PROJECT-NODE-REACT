@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import path from "../../../utils/path";
 import { Footer, PayPal } from "../../organisms";
 import logo from "../../../assets/images/logo.png";
@@ -27,10 +27,11 @@ const Payment = () => {
   const [loading, setLoading] = useState(false);
   const [cash, setCash] = useState("");
   const dispatch = useDispatch();
-
+  const navigate = useNavigate();
   const { currentData } = useSelector((state) => state.user);
   // const getCartLocal = Base64.decode(JSON.parse(localStorage.getItem("cart")));
   const getCartLocal = JSON.parse(localStorage.getItem("cart"));
+
   const handleSaveOrder = async () => {
     const response = await apiCreateOrder({
       status: "Successed",
@@ -45,9 +46,16 @@ const Payment = () => {
       // total: 30,
       orderBy: currentData?._id,
     });
-    console.log(response);
     if (response.success) {
       dispatch(getCurrent());
+      getCartLocal.map((el) => {
+        localStorage.removeItem(el?.product?._id.slice(-4));
+        localStorage.removeItem(el?.product?._id);
+        localStorage.removeItem("cart");
+        localStorage.removeItem("selectedId");
+        localStorage.removeItem("allCheckbox");
+      });
+      navigate("/");
     }
   };
   useEffect(() => {
@@ -57,7 +65,6 @@ const Payment = () => {
       setLoading(false);
     }, 500);
   }, []);
-  console.log(cash);
   return (
     <>
       {loading ? (

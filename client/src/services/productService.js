@@ -63,3 +63,29 @@ export const apiCreateOrder = (data) =>
       console.log("Failed to get product", error);
     }
   });
+export const apiGetOrders = (params) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const response = await axiosConfig({
+        method: "GET",
+        url: "/order/admin",
+        params,
+      });
+      resolve(response);
+    } catch (error) {
+      console.log("Failed to get product", error);
+    }
+  });
+export const apiGetUserOrders = (params) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const response = await axiosConfig({
+        method: "GET",
+        url: "/order/",
+        params,
+      });
+      resolve(response);
+    } catch (error) {
+      console.log("Failed to get product", error);
+    }
+  });

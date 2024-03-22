@@ -1,7 +1,3 @@
-import React from "react";
-
-const Order = () => {
-  return <div>Order</div>;
-};
+import Order from "../../../components/pages/MyPage/MyOrder";
 
 export default Order;

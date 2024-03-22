@@ -24,11 +24,13 @@ const createOrder = async (req, res) => {
   //     createData.total = total;
   //     createData.coupon = coupon;
   //   }
-  const { products, total, address } = req.body;
+  const { products, total, address, status } = req.body;
   if (address) {
     await User.findByIdAndUpdate(_id, { address, cart: [] }, { new: true });
   }
-  const rs = await Order.create({ products, total, postedBy: _id });
+  const data = { products, total, orderBy: _id };
+  if (status) data.status = status;
+  const rs = await Order.create(data);
 
   return res.json({
     success: rs ? true : false,
@@ -51,15 +53,143 @@ const updateStatus = async (req, res) => {
   });
 };
 const getUserOrder = async (req, res) => {
-  const { _id } = req.user;
-  const response = await Order.find({ orderBy: _id });
-  return res.json({
-    success: response ? true : false,
-    createdUserCart: response ? response : " Something went wrong",
-  });
+  const queries = { ...req.query };
+  const { _id } = req.currentUser;
+
+  const excludeFiels = ["limit", "sort", "page", "fields"];
+  excludeFiels.forEach((e) => delete queries[e]);
+  let queryString = JSON.stringify(queries);
+  queryString = queryString.replace(
+    /\b(gte|gt|lt|lte)\b/g,
+    (macthedEl) => `$${macthedEl}`
+  );
+  let fomatedQueries = JSON.parse(queryString);
+  // let colorQueryObject = {};
+  // if (queries?.title) {
+  //   fomatedQueries.title = { $regex: queries.title, $options: "i" };
+  // }
+
+  // if (queries?.brand) {
+  //   fomatedQueries.brand = { $regex: queries.brand, $options: "i" };
+  // }
+  // if (queries?.type)
+  //   fomatedQueries.type = { $regex: queries.type, $options: "i" };
+  // if (queries?.color) {
+  //   delete fomatedQueries.color;
+  //   const colorArr = queries.color?.split(",");
+
+  //   const colorQuery = colorArr.map((el) => ({
+  //     color: { $regex: el, $options: "i" },
+  //   }));
+
+  //   colorQueryObject = { $or: colorQuery };
+  // }
+  const q = { ...fomatedQueries, orderBy: _id };
+  let queryCommad = Order.find(q);
+  try {
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(",").join(" ");
+      queryCommad = queryCommad.sort(sortBy);
+      // console.log(queryCommad);
+    }
+
+    if (req.query.fields) {
+      const fields = req.query.fields.split(",").join(" ");
+      queryCommad = queryCommad.select(fields);
+    }
+
+    const page = +req.query.page || 1;
+    const limit = +req.query.limit || process.env.LIMIT_PRODUCTS;
+    const skip = (page - 1) * limit;
+
+    queryCommad.skip(skip).limit(limit);
+    queryCommad
+      .then(async (response) => {
+        const counts = await Order.find(q).countDocuments();
+        return res.status(200).json({
+          success: response ? true : false,
+          counts,
+          order: response ? response : "Cannot get orders",
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  } catch (err) {
+    console.log(err);
+    throw new Error(err.message);
+  }
+};
+const getOrder = async (req, res) => {
+  const queries = { ...req.query };
+
+  const excludeFiels = ["limit", "sort", "page", "fields"];
+  excludeFiels.forEach((e) => delete queries[e]);
+  let queryString = JSON.stringify(queries);
+  queryString = queryString.replace(
+    /\b(gte|gt|lt|lte)\b/g,
+    (macthedEl) => `$${macthedEl}`
+  );
+  let fomatedQueries = JSON.parse(queryString);
+  // let colorQueryObject = {};
+  // if (queries?.title) {
+  //   fomatedQueries.title = { $regex: queries.title, $options: "i" };
+  // }
+
+  // if (queries?.brand) {
+  //   fomatedQueries.brand = { $regex: queries.brand, $options: "i" };
+  // }
+  // if (queries?.type)
+  //   fomatedQueries.type = { $regex: queries.type, $options: "i" };
+  // if (queries?.color) {
+  //   delete fomatedQueries.color;
+  //   const colorArr = queries.color?.split(",");
+
+  //   const colorQuery = colorArr.map((el) => ({
+  //     color: { $regex: el, $options: "i" },
+  //   }));
+
+  //   colorQueryObject = { $or: colorQuery };
+  // }
+  const q = { ...fomatedQueries };
+  let queryCommad = Order.find(q);
+  try {
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(",").join(" ");
+      queryCommad = queryCommad.sort(sortBy);
+      // console.log(queryCommad);
+    }
+
+    if (req.query.fields) {
+      const fields = req.query.fields.split(",").join(" ");
+      queryCommad = queryCommad.select(fields);
+    }
+
+    const page = +req.query.page || 1;
+    const limit = +req.query.limit || process.env.LIMIT_PRODUCTS;
+    const skip = (page - 1) * limit;
+
+    queryCommad.skip(skip).limit(limit);
+    queryCommad
+      .then(async (response) => {
+        const counts = await Order.find(q).countDocuments();
+        return res.status(200).json({
+          success: response ? true : false,
+          counts,
+          order: response ? response : "Cannot get orders",
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  } catch (err) {
+    console.log(err);
+    throw new Error(err.message);
+  }
 };
 module.exports = {
   createOrder,
   updateStatus,
   getUserOrder,
+  getOrder,
 };

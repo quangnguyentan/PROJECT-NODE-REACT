@@ -25,7 +25,7 @@ const ProductCard = () => {
   const [productCate, setProductCate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
-
+  const [type, setType] = useState("");
   const dispatch = useDispatch();
   const { category, id, title } = useParams();
   const getProductById = async (id) => {
@@ -64,10 +64,11 @@ const ProductCard = () => {
         pid: product?._id,
         quantity,
         color: product?.color[0] ? product?.color[0] : "Không có",
+        type: "increase",
       });
       if (response?.success) {
         dispatch(getCurrent());
-        const currentQuantity = localStorage.getItem(product?._id);
+        const currentQuantity = JSON.parse(localStorage.getItem(product?._id));
 
         if (currentQuantity) {
           const updatedQuantity = Number(currentQuantity) + quantity;

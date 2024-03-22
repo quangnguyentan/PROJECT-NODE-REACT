@@ -12,4 +12,6 @@ router.put(
   orderController.updateStatus
 );
 router.get("/", verifyToken, orderController.getUserOrder);
+router.get("/admin", verifyToken, orderController.getOrder);
+
 module.exports = router;
